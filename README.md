@@ -22,6 +22,18 @@ USD per GPU-hour, 2026-11-15, from Azure and AWS list prices. One series per exa
 
 Spot prices are Azure only (AWS doesn't publish spot prices in its price list).
 
+### History
+
+The index goes back to **2021** (A100 SXM 40GB) and **2024** (H100 SXM), rebuilt from AWS's archived price lists
+and dated by when AWS published each price. The clearest event so far: AWS's GPU price cut in mid-2025, visible in
+the price list published on **2025-07-03**:
+
+| series (AWS, on-demand) | before | after | change |
+|---|---:|---:|---:|
+| H100 SXM 80GB | 14.75 | 8.26 | −44% |
+| A100 SXM 80GB | 6.15 | 4.12 | −33% |
+| A100 SXM 40GB | 4.92 | 3.29 | −33% |
+
 Machine-readable: [`index/latest.json`](index/latest.json) and one file per series in [`index/series/`](index/series/).
 
 ## Updates

@@ -166,3 +166,11 @@ def test_a_correction_restates_the_published_value(ledger, tmp_path):
                        at=datetime(2026, 11, 16, 9, tzinfo=timezone.utc))
     after = index.build(ledger, tmp_path / "out")["series"]["h100-sxm-80gb-on-demand"]
     assert after["value"] == pytest.approx(before["value"] * 2)
+
+
+def test_series_files_are_valid_json_with_one_point_per_line(ledger, tmp_path):
+    index.build(ledger, tmp_path / "out")
+    text = (tmp_path / "out/series/h100-sxm-80gb-on-demand.json").read_text()
+    data = json.loads(text)
+    assert len(data["points"]) == 2
+    assert sum(1 for line in text.splitlines() if line.strip().startswith('{"date"')) == 2

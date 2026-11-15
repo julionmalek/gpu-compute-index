@@ -100,4 +100,78 @@ def test_region_urls_point_at_csv_files():
     def get(url):
         assert url.endswith("/V9/region_index.json")
         return {"regions": {"us-east-1": {"currentVersionUrl": "/offers/v1.0/aws/AmazonEC2/V9/us-east-1/index.json"}}}
-    assert aws.region_csv_urls("V9", get) == ["https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/V9/us-east-1/index.csv"]
+    assert aws.region_csv_urls("V9", get) == [
+        ("us-east-1", "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/V9/us-east-1/index.csv")]
+
+
+# ---------- history ----------
+
+def test_version_ids_are_publication_times():
+    assert aws.published_at("20201201200519") == "2020-12-01T20:05:19Z"
+
+
+def test_old_files_without_market_option_or_region_code():
+    old = row()
+    del old["MarketOption"]
+    del old["Region Code"]
+    old["_region"] = "us-west-2"
+    obs, skipped = aws.parse([old], OBSERVED)
+    assert [o["region"] for o in obs] == ["us-west-2"] and skipped == {}
+
+
+def test_streaming_tags_rows_with_their_region():
+    rows = list(aws.gpu_rows(csv_lines([row()]), region="eu-north-1"))
+    assert rows[0]["_region"] == "eu-north-1"
+
+
+def _fake_versions(monkeypatch, versions, current):
+    monkeypatch.setattr(aws, "list_versions", lambda: versions)
+    monkeypatch.setattr(aws, "current_version", lambda: current)
+    fetched = []
+
+    def fake_fetch(version):
+        fetched.append(version)
+        return [row(price={"20201201200519": "32.77", "20230531133826": "98.32"}.get(version, "55.04"))]
+    monkeypatch.setattr(aws, "fetch_items", fake_fetch)
+    return fetched
+
+
+def test_backfill_collects_old_versions_oldest_first_dated_by_publication(tmp_path, monkeypatch):
+    ledger = Ledger(tmp_path / "ledger")
+    versions = [("20190101000000", "2018-12-01"), ("20201201200519", "2020-11-01"),
+                ("20230531133826", "2023-05-01"), ("20261114012926", "2026-11-01")]
+    fetched = _fake_versions(monkeypatch, versions, current="20261114012926")
+    assert cli.backfill(ledger, since="2020-11-01", limit=None) == 0
+    assert fetched == ["20201201200519", "20230531133826"]  # too old and current are both skipped
+    obs = ledger.observations()
+    assert sorted(o["observed_at"] for o in obs) == ["2020-12-01T20:05:19Z", "2023-05-31T13:38:26Z"]
+    runs = [e for e in ledger.entries() if e["kind"] == "run"]
+    assert all(r["backfill"] for r in runs)
+    assert aws.last_version(ledger) is None   # backfill never stands in for the daily collection
+    assert ledger.verify().ok
+
+
+def test_backfill_can_resume(tmp_path, monkeypatch):
+    ledger = Ledger(tmp_path / "ledger")
+    versions = [("20201201200519", "2020-11-01"), ("20230531133826", "2023-05-01"), ("20261114012926", "2026-11-01")]
+    fetched = _fake_versions(monkeypatch, versions, current="20261114012926")
+    cli.backfill(ledger, since="2020-11-01", limit=1)
+    cli.backfill(ledger, since="2020-11-01", limit=None)
+    assert fetched == ["20201201200519", "20230531133826"]  # nothing collected twice
+
+
+def test_backfill_records_failures_and_keeps_going(tmp_path, monkeypatch):
+    ledger = Ledger(tmp_path / "ledger")
+    versions = [("20201201200519", "2020-11-01"), ("20230531133826", "2023-05-01")]
+    monkeypatch.setattr(aws, "list_versions", lambda: versions)
+    monkeypatch.setattr(aws, "current_version", lambda: "x")
+
+    def flaky(version):
+        if version == "20201201200519":
+            raise ConnectionError("network blip")
+        return [row()]
+    monkeypatch.setattr(aws, "fetch_items", flaky)
+    assert cli.backfill(ledger, since="2020-11-01", limit=None) == 1
+    runs = [e for e in ledger.entries() if e["kind"] == "run"]
+    assert [r["status"] for r in runs] == ["error", "ok"]
+    assert aws.collected_versions(ledger) == {"20230531133826"}  # the failed one will be retried next time

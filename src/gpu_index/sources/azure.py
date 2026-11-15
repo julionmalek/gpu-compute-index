@@ -8,15 +8,13 @@ OS licence, and "Low Priority" meters are a Batch-only product, so both are skip
 
 from __future__ import annotations
 
-import json
-import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from typing import Callable
 
 from ..catalog import AZURE
 from ..ledger import observation_id
+from . import Fetch
+from .http import get_json
 
 SOURCE = "azure"
 API = "https://prices.azure.com/api/retail/prices"
@@ -32,25 +30,8 @@ def first_page_url() -> str:
     return API + "?" + urllib.parse.urlencode({"$filter": build_filter(sorted(AZURE))})
 
 
-RETRY_STATUSES = {429, 500, 502, 503, 504}
-MAX_ATTEMPTS = 5
-
-
-def http_get_json(url: str, *, sleep: Callable[[float], None] = time.sleep,
-                  opener: Callable = urllib.request.urlopen) -> dict:
-    """GET JSON, backing off politely when the API says it's busy (honours Retry-After)."""
-    req = urllib.request.Request(url, headers={"User-Agent": "gpu-compute-index/0.1"})
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            with opener(req, timeout=60) as resp:
-                return json.load(resp)
-        except urllib.error.HTTPError as exc:
-            if exc.code not in RETRY_STATUSES or attempt == MAX_ATTEMPTS:
-                raise
-            retry_after = exc.headers.get("Retry-After") if exc.headers else None
-            wait = float(retry_after) if retry_after and retry_after.isdigit() else 5 * 2 ** (attempt - 1)
-            sleep(min(wait, 120))
-    raise AssertionError("unreachable")
+# kept under this name for backwards compatibility with existing callers and tests
+http_get_json = get_json
 
 
 def fetch_items(get: Callable[[str], dict] = http_get_json) -> list[dict]:
@@ -63,6 +44,10 @@ def fetch_items(get: Callable[[str], dict] = http_get_json) -> list[dict]:
         items.extend(page.get("Items", []))
         url = page.get("NextPageLink")
     raise RuntimeError(f"Azure returned more than {MAX_PAGES} pages; refusing to continue")
+
+
+def fetch(ledger=None) -> Fetch:
+    return Fetch(items=fetch_items())
 
 
 def tier_of(item: dict) -> str | None:

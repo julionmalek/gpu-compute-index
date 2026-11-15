@@ -73,8 +73,37 @@ def test_identical_prices_are_never_dropped():
 def test_only_each_sources_last_snapshot_of_the_day_counts():
     early = [o(1.0, f"r{i}", observed="2026-11-15T01:00:00Z") for i in range(5)]
     late = [o(2.0, f"r{i}", observed="2026-11-15T20:00:00Z") for i in range(5)]
-    days = index.latest_snapshots(early + late)
+    days = index.daily_snapshots(early + late)
     assert {x["usd_per_gpu_hour"] for x in days["2026-11-15"]} == {2.0}
+
+
+def test_list_prices_carry_forward_until_replaced():
+    # AWS-style: one snapshot on the 1st; Azure-style: daily snapshots
+    aws = [o(7.0, f"a{i}", source="aws", observed="2026-11-01T06:00:00Z") for i in range(5)]
+    azure = [o(9.0, f"z{i}", source="azure", observed=f"2026-11-{d:02d}T06:00:00Z") for d in (1, 2, 3) for i in range(5)]
+    days = index.daily_snapshots(aws + azure)
+    assert sorted(days) == ["2026-11-01", "2026-11-02", "2026-11-03"]
+    on_3rd = days["2026-11-03"]
+    assert {x["source"] for x in on_3rd} == {"aws", "azure"}
+    assert {x["observed_at"] for x in on_3rd if x["source"] == "azure"} == {"2026-11-03T06:00:00Z"}
+    point = index.compute_point("2026-11-03", on_3rd)
+    assert point.source_dates == {"aws": "2026-11-01", "azure": "2026-11-03"}
+
+
+def test_stale_snapshots_expire():
+    old = [o(7.0, f"a{i}", source="aws", observed="2026-09-01T06:00:00Z") for i in range(5)]
+    fresh = [o(9.0, f"z{i}", source="azure", observed="2026-11-15T06:00:00Z") for i in range(5)]
+    days = index.daily_snapshots(old + fresh)
+    assert {x["source"] for x in days["2026-10-06"]} == {"aws"}       # exactly 35 days: still counts
+    assert days["2026-10-07"] == []                                     # 36 days: expired, and no azure yet
+    assert {x["source"] for x in days["2026-11-15"]} == {"azure"}
+
+
+def test_gaps_between_snapshots_are_filled_day_by_day():
+    a = [o(2.0, f"r{i}", observed="2026-11-01T06:00:00Z") for i in range(5)]
+    b = [o(3.0, f"r{i}", observed="2026-11-04T06:00:00Z") for i in range(5)]
+    days = index.daily_snapshots(a + b)
+    assert [days[d][0]["usd_per_gpu_hour"] for d in sorted(days)] == [2.0, 2.0, 2.0, 3.0]
 
 
 def test_no_value_when_too_few_prices():

@@ -11,9 +11,9 @@ from pathlib import Path
 
 from . import index
 from .ledger import Ledger, iso
-from .sources import azure
+from .sources import aws, azure
 
-SOURCES = {"azure": azure}
+SOURCES = {"aws": aws, "azure": azure}
 
 
 def collect(ledger: Ledger, source_name: str) -> int:
@@ -22,7 +22,14 @@ def collect(ledger: Ledger, source_name: str) -> int:
     observed_at = iso(started)
     run = {"kind": "run", "run_id": f"{source_name}-{observed_at}", "source": source_name, "started_at": observed_at}
     try:
-        items = source.fetch_items()
+        fetched = source.fetch(ledger)
+        run.update(fetched.meta)
+        if fetched.unchanged:
+            run.update(status="ok", unchanged=True, observations=0)
+            ledger.append([run])
+            print(f"{source_name}: nothing new since the last run {fetched.meta}. Recorded the check.")
+            return 0
+        items = fetched.items
         observations, skipped = source.parse(items, observed_at)
     except Exception as exc:  # the failure itself is recorded, so the gap is explained
         run.update(status="error", error=f"{type(exc).__name__}: {exc}", observations=0)

@@ -1,0 +1,66 @@
+# The project's only workflow: once a day, collect prices, verify the ledger,
+# rebuild the index and commit both. A failed collection is still committed
+# (as a "run" entry with status "error") so the gap is explained, and then the
+# job is marked failed so it shows up in GitHub's notifications.
+name: Daily collection
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # 06:17 UTC; off the hour, when GitHub's scheduler is less busy
+  workflow_dispatch: {}    # "Run workflow" button for manual runs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-collection
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONPATH: src      # standard library only, so nothing to install
+    steps:
+      # main only accepts pull requests. The one exception is this repo's deploy key,
+      # stored as the DEPLOY_KEY secret, so the bot can append data without a daily PR.
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify ledger before writing
+        run: python -m gpu_index verify
+
+      - name: Collect Azure prices
+        id: azure
+        continue-on-error: true
+        run: python -m gpu_index collect azure
+
+      - name: Verify ledger after writing
+        run: python -m gpu_index verify
+
+      - name: Build index
+        run: python -m gpu_index build
+
+      - name: Commit ledger and index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ledger index
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+            exit 0
+          fi
+          git commit -m "data: daily collection $(date -u +%Y-%m-%d)"
+          git push
+
+      - name: Fail the job if a collection failed
+        if: steps.azure.outcome == 'failure'
+        run: |
+          echo "::error::Azure collection failed. The failure was recorded in the ledger as a run entry."
+          exit 1

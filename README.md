@@ -21,6 +21,12 @@ USD per GPU-hour, 2026-11-15. One series per exact GPU model; rules in [METHODOL
 
 Machine-readable: [`index/latest.json`](index/latest.json) and one file per series in [`index/series/`](index/series/).
 
+## Updates
+
+A single GitHub Action ([`daily.yml`](.github/workflows/daily.yml)) runs every day at 06:17 UTC: it verifies the
+ledger, collects prices, verifies again, rebuilds the index and commits both. If a collection fails, the failure is
+still committed as a `run` entry, so the gap is on the record, and the job is marked failed.
+
 ## How the ledger works
 
 ```

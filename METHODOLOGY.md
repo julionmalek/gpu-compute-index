@@ -58,6 +58,23 @@ For each series and each UTC day:
 The weighted quantile at level *q* is the smallest price whose cumulative weight (prices sorted ascending)
 reaches *q* of the total weight. Values are rounded to 4 decimal places.
 
+## History (backfill)
+
+Values before the daily collection started come from **AWS's archived price lists**, which AWS keeps publicly,
+back to 2015. The backfill starts in November 2020, when the A100 launched on AWS.
+
+- **Point-in-time dating.** Each archived price is dated by when AWS **published** that price list (the version
+  id is the publication timestamp), not by the month it was "effective from". AWS often publishes a month's list
+  weeks after it takes effect, so this is conservative: the index never uses a price before the market could
+  have seen it. That makes the history safe for backtesting.
+- **Same rules.** Historical days follow exactly the same calculation as today, including carry-forward
+  (AWS publishes about monthly) and the minimums: a series has no value until at least 5 prices exist, which for
+  new GPUs means until AWS offered them in enough regions.
+- **AWS only.** Azure has no public price archive, so historical values have one source; `sources` and
+  `source_dates` on each value show this.
+- **Auditable.** Every backfilled price records the price list version it came from (`source_ref`), and every
+  version collected has a `run` entry marked `backfill`. Anyone can download that exact archived file and check.
+
 ## Published files
 
 | file | contents |
@@ -83,6 +100,12 @@ files are committed to git, every restatement is visible as a diff, with the cor
 - **Two sources, both hyperscalers.** Azure and AWS list prices. Specialist GPU clouds and marketplaces (where the
   RTX 4090 trades) are cheaper but need a source whose terms allow automated collection.
 - **AWS has no spot prices** in its public price list, so spot series are Azure only.
+- **Level jumps when a source joins.** The value averages the sources present, so when a source enters or leaves
+  a series, the level can jump without any price changing. On 2026-11-15 the H100 SXM series went from 8.26
+  (AWS only) to 12.12 (AWS + Azure) because Azure's daily collection started, not because prices moved.
+  Read changes across such dates using `sources`, or compare per-source values. A later version should
+  chain-link (scale the new composition so the level is continuous on the day it changes), as commodity
+  indices do when their constituents change.
 - **List prices, not traded prices.** These are advertised prices. Actual deals, discounts and committed-use
   contracts are usually cheaper.
 - **No volume weighting.** Providers don't publish how much capacity they have at each price, so every region

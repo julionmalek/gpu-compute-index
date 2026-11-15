@@ -53,7 +53,7 @@
         "azure": 7
       },
       "tier": "on_demand",
-      "value": 3.3996
+      "value": 3.6862
     },
     "a100-sxm-40gb-spot": {
       "date": "2026-11-15",
@@ -89,7 +89,7 @@
         "azure": 29
       },
       "tier": "on_demand",
-      "value": 4.6288
+      "value": 4.7211
     },
     "a100-sxm-80gb-spot": {
       "date": "2026-11-15",
@@ -159,7 +159,7 @@
         "azure": 24
       },
       "tier": "on_demand",
-      "value": 11.5584
+      "value": 12.1165
     },
     "h100-sxm-80gb-spot": {
       "date": "2026-11-15",

@@ -43,7 +43,8 @@ def test_parse_normalises_and_filters():
     items = [
         row(),                                                       # kept: 55.04 / 8
         row(price="0", MarketOption="CapacityBlock", operation="RunInstances:CB"),
-        row(**{"Operating System": "RHEL"}),
+        row(**{"Operating System": "RHEL"}, operation="RunInstances:0010"),
+        row(**{"Operating System": "SUSE"}, operation="RunInstances:000g", MarketOption="OnDemand"),
         row(Tenancy="Dedicated"),
         row(CapacityStatus="UnusedCapacityReservation"),
         row(TermType="Reserved"),
@@ -55,7 +56,7 @@ def test_parse_normalises_and_filters():
     assert by_instance["p5.48xlarge"]["gpu_model"] == "H100 SXM 80GB"
     assert by_instance["p4d.24xlarge"]["gpu_model"] == "A100 SXM 40GB"
     assert all(o["tier"] == "on_demand" for o in obs)
-    assert skipped == {"capacity block": 1, "os or software licence": 1, "dedicated or reservation": 2, "not on-demand": 1}
+    assert skipped == {"capacity block": 1, "os or software licence": 2, "dedicated or reservation": 2, "not on-demand": 1}
 
 
 def test_one_and_eight_gpu_machines_agree_per_gpu():

@@ -9,22 +9,25 @@ The index is computed deterministically from the ledger, so anyone can recompute
 
 ## Latest values
 
-USD per GPU-hour, 2026-11-15. One series per exact GPU model; rules in [METHODOLOGY.md](METHODOLOGY.md).
+USD per GPU-hour, 2026-11-15, from Azure and AWS list prices. One series per exact GPU model; rules in
+[METHODOLOGY.md](METHODOLOGY.md).
 
-| series | on-demand | spot |
-|--------|----------:|-----:|
-| H100 SXM 80GB | 15.98 | 2.95 |
-| H100 NVL 94GB | 9.07 | 1.84 |
-| A100 SXM 80GB | 5.33 | 1.45 |
-| A100 PCIe 80GB | 4.78 | 0.93 |
-| A100 SXM 40GB | 4.08 | 0.90 |
+| series | on-demand | spot | sources (on-demand) |
+|--------|----------:|-----:|---------|
+| H100 SXM 80GB | 12.12 | 2.95 | AWS, Azure |
+| H100 NVL 94GB | 9.07 | 1.84 | Azure |
+| A100 SXM 80GB | 4.72 | 1.45 | AWS, Azure |
+| A100 PCIe 80GB | 4.78 | 0.93 | Azure |
+| A100 SXM 40GB | 3.69 | 0.90 | AWS, Azure |
+
+Spot prices are Azure only (AWS doesn't publish spot prices in its price list).
 
 Machine-readable: [`index/latest.json`](index/latest.json) and one file per series in [`index/series/`](index/series/).
 
 ## Updates
 
 A single GitHub Action ([`daily.yml`](.github/workflows/daily.yml)) runs every day at 06:17 UTC: it verifies the
-ledger, collects prices, verifies again, rebuilds the index and commits both. If a collection fails, the failure is
+ledger, collects Azure and AWS prices, verifies again, rebuilds the index and commits both. If a collection fails, the failure is
 still committed as a `run` entry, so the gap is on the record, and the job is marked failed.
 
 ## How the ledger works
@@ -50,6 +53,7 @@ All prices are normalised to **USD per GPU-hour** (an 8x H100 machine at $98.32/
 | source                  | what                                                       | access          |
 |-------------------------|------------------------------------------------------------|-----------------|
 | Azure Retail Prices API | H100 and A100 list prices, on-demand and spot, all regions | public, no key  |
+| AWS EC2 Price List (bulk files) | H100 SXM and A100 SXM list prices, on-demand, all regions | public, no key |
 
 Which machines count, and how many GPUs each one has, is listed explicitly in
 [`src/gpu_index/catalog.py`](src/gpu_index/catalog.py).
@@ -61,6 +65,7 @@ Python 3.11+, no runtime dependencies.
 ```bash
 python -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m gpu_index collect azure   # fetch prices and append them to the ledger
+.venv/bin/python -m gpu_index collect aws     # only downloads (~6 GB, streamed) when AWS publishes a new version
 .venv/bin/python -m gpu_index verify          # check the whole hash chain
 .venv/bin/python -m gpu_index summary         # min / median / max per GPU, latest snapshot
 .venv/bin/python -m gpu_index build           # recompute the index into ./index (refuses if verify fails)

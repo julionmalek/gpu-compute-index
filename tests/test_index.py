@@ -106,6 +106,24 @@ def test_gaps_between_snapshots_are_filled_day_by_day():
     assert [days[d][0]["usd_per_gpu_hour"] for d in sorted(days)] == [2.0, 2.0, 2.0, 3.0]
 
 
+def test_each_source_counts_equally_through_its_own_median():
+    # two clusters, like AWS (~$8) and Azure (~$16) for the H100 SXM
+    aws = [o(p, f"a{i}", source="aws") for i, p in enumerate([6.9, 7.5, 8.3, 9.0, 11.6])]
+    azure = [o(p, f"z{i}", source="azure") for i, p in enumerate([12.3, 15.0, 16.0, 17.6, 23.3])]
+    point = index.compute_point("2026-11-15", aws + azure)
+    assert point.value == round((8.3 + 16.0) / 2, 4)
+    # one listing changing at the edge of a cluster barely moves it
+    aws[4] = o(9.5, "a4", source="aws")
+    assert index.compute_point("2026-11-15", aws + azure).value == round((8.3 + 16.0) / 2, 4)
+
+
+def test_a_source_with_too_few_prices_does_not_count():
+    azure = [o(16.0 + i / 10, f"z{i}", source="azure") for i in range(5)]
+    lonely = [o(3.0, "a0", source="aws"), o(3.1, "a1", source="aws")]
+    point = index.compute_point("2026-11-15", azure + lonely)
+    assert point.sources == {"azure": 5} and point.value == 16.2
+
+
 def test_no_value_when_too_few_prices():
     assert index.compute_point("2026-11-15", [o(2.0, f"r{i}") for i in range(4)]) is None
     point = index.compute_point("2026-11-15", [o(2.0 + i / 10, f"r{i}") for i in range(5)])

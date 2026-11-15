@@ -10,15 +10,19 @@ product mix instead of the price. For each series and UTC day:
                 daily (Azure) count with that day's prices; list prices that
                 change rarely (AWS publishes about monthly) stay valid until
                 replaced. A source never counts twice.
-  2. Weights    every source counts equally; within a source every region counts
-                equally; within a region every machine size counts equally.
+  2. Weights    within a source, every region counts equally, and within a
+                region every machine size counts equally.
   3. Outliers   drop prices more than 3x above or below the median. That catches
                 data errors (a whole-machine price read as per-GPU, a misplaced
                 decimal) while keeping genuine regional premiums.
-  4. Value      the weighted median of what is left, with the weighted 25th and
-                75th percentiles as a range.
-  5. Minimum    publish nothing if fewer than 5 prices survive. A missing value is
-                better than a misleading one.
+  4. Value      each source's weighted median, then the plain average of those
+                medians, so every source counts equally. (A single pooled median
+                lands on whichever price sits at the boundary between sources
+                and jumps when one listing changes.) The 25th-75th percentile
+                range is taken over all prices, weighting sources equally.
+  5. Minimum    a source needs at least 3 prices to count, and the day needs at
+                least 5 in total; otherwise nothing is published. A missing
+                value is better than a misleading one.
 
 Everything here is a pure function of the ledger: same ledger in, byte-identical
 files out.
@@ -39,6 +43,7 @@ from .ledger import Ledger
 METHODOLOGY_VERSION = "1.1"
 TIERS = ("on_demand", "spot")
 MIN_OBSERVATIONS = 5
+MIN_PER_SOURCE = 3
 OUTLIER_FACTOR = 3.0
 MAX_SNAPSHOT_AGE_DAYS = 35
 
@@ -144,23 +149,32 @@ def daily_snapshots(obs: list[dict]) -> dict[str, list[dict]]:
 def compute_point(day: str, obs: list[dict]) -> Point | None:
     obs = [o for o in obs if o["usd_per_gpu_hour"] > 0]
     kept, dropped = drop_outliers(obs)
+    by_source: dict[str, list[dict]] = defaultdict(list)
+    for o in kept:
+        by_source[o["source"]].append(o)
+    by_source = {src: rows for src, rows in sorted(by_source.items()) if len(rows) >= MIN_PER_SOURCE}
+    kept = [o for rows in by_source.values() for o in rows]
     if len(kept) < MIN_OBSERVATIONS:
         return None
+
+    source_medians = []
+    for rows in by_source.values():
+        w = nested_weights(rows)
+        source_medians.append(weighted_quantile([o["usd_per_gpu_hour"] for o in rows], w, 0.5))
+    value = sum(source_medians) / len(source_medians)
+
     prices = [o["usd_per_gpu_hour"] for o in kept]
-    w = nested_weights(kept)
-    sources: dict[str, int] = defaultdict(int)
-    taken: dict[str, str] = {}
-    for o in kept:
-        sources[o["source"]] += 1
-        taken[o["source"]] = max(taken.get(o["source"], ""), o["observed_at"][:10])
+    w = nested_weights(kept)  # every source gets an equal share of the range too
+    taken = {src: max(o["observed_at"] for o in rows)[:10] for src, rows in by_source.items()}
     r = lambda x: round(x, 4)  # noqa: E731
     return Point(
         date=day,
-        value=r(weighted_quantile(prices, w, 0.5)),
+        value=r(value),
         p25=r(weighted_quantile(prices, w, 0.25)),
         p75=r(weighted_quantile(prices, w, 0.75)),
-        used=len(kept), dropped=len(dropped), sources=dict(sorted(sources.items())),
-        source_dates=dict(sorted(taken.items())),
+        used=len(kept), dropped=len(dropped),
+        sources={src: len(rows) for src, rows in by_source.items()},
+        source_dates=taken,
     )
 
 

@@ -103,9 +103,11 @@ def parse(items: list[dict], observed_at: str) -> tuple[list[dict], dict[str, in
             skip("not in catalog"); continue
         if r.get("TermType") != "OnDemand":
             skip("not on-demand"); continue
-        if r.get("MarketOption") != "OnDemand" or r.get("operation") != "RunInstances":
+        if r.get("MarketOption") != "OnDemand":
             skip("capacity block"); continue
-        if r.get("Operating System") != "Linux" or r.get("Pre Installed S/W") != "NA":
+        # plain Linux is exactly operation "RunInstances"; RHEL, SUSE, Windows etc. have suffixed codes
+        if (r.get("Operating System") != "Linux" or r.get("Pre Installed S/W") != "NA"
+                or r.get("operation") != "RunInstances"):
             skip("os or software licence"); continue
         if r.get("Tenancy") != "Shared" or r.get("CapacityStatus") != "Used":
             skip("dedicated or reservation"); continue

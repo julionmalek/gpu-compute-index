@@ -1,0 +1,20 @@
+{
+  "gpu": "A100",
+  "gpu_model": "A100 PCIe 80GB",
+  "methodology_version": "1.0",
+  "points": [
+    {
+      "date": "2026-11-15",
+      "observations_used": 75,
+      "outliers_dropped": 0,
+      "p25": 0.8145,
+      "p75": 0.9703,
+      "sources": {
+        "azure": 75
+      },
+      "value": 0.9329
+    }
+  ],
+  "tier": "spot",
+  "unit": "USD per GPU-hour"
+}

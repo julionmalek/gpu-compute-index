@@ -1,0 +1,20 @@
+{
+  "gpu": "H100",
+  "gpu_model": "H100 NVL 94GB",
+  "methodology_version": "1.0",
+  "points": [
+    {
+      "date": "2026-11-15",
+      "observations_used": 58,
+      "outliers_dropped": 0,
+      "p25": 8.376,
+      "p75": 9.423,
+      "sources": {
+        "azure": 58
+      },
+      "value": 9.074
+    }
+  ],
+  "tier": "on_demand",
+  "unit": "USD per GPU-hour"
+}

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPU Compute Index</title>
+  <meta name="description" content="An open, auditable daily price index for renting GPU compute: H100 and A100, from AWS and Azure list prices, with history back to 2021.">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="site/style.css">
+</head>
+<body>
+  <header class="top wrap">
+    <a class="back" href="https://julionmalek.com/pro/">← Julion Malek</a>
+    <nav>
+      <a href="https://github.com/julionmalek/gpu-compute-index/blob/main/METHODOLOGY.md">Methodology</a>
+      <a href="https://github.com/julionmalek/gpu-compute-index">GitHub</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <p class="eyebrow">Open data · updated daily</p>
+      <h1>GPU Compute Index</h1>
+      <p class="lead">What it costs to rent one AI GPU for one hour, in US dollars. One number per GPU model per day, built
+        from public AWS and Azure list prices by <a href="https://github.com/julionmalek/gpu-compute-index/blob/main/METHODOLOGY.md">written rules</a>,
+        from a tamper-evident ledger anyone can verify.</p>
+    </section>
+
+    <section class="tiles" id="tiles" aria-label="Latest on-demand prices"></section>
+
+    <section class="panel" aria-labelledby="chart-title">
+      <div class="controls" role="group" aria-label="Chart filters">
+        <div class="seg" id="range" role="radiogroup" aria-label="Time range">
+          <button data-range="90" role="radio">3M</button>
+          <button data-range="365" role="radio">1Y</button>
+          <button data-range="0" role="radio">All</button>
+        </div>
+        <label class="select">
+          <span class="sr-only">GPU model</span>
+          <select id="model"></select>
+        </label>
+        <div class="seg" id="tier" role="radiogroup" aria-label="Pricing tier">
+          <button data-tier="on-demand" role="radio">On-demand</button>
+          <button data-tier="spot" role="radio">Spot</button>
+        </div>
+      </div>
+
+      <div class="chart-head">
+        <div>
+          <h2 id="chart-title">—</h2>
+          <p class="sub" id="chart-sub"></p>
+        </div>
+        <div class="now">
+          <span class="now-value" id="now-value">—</span>
+          <span class="now-label" id="now-label"></span>
+        </div>
+      </div>
+
+      <div class="chart" id="chart" role="img" aria-describedby="chart-sub">
+        <div class="tooltip" id="tooltip" hidden></div>
+      </div>
+      <p class="chart-note">Line: the index value. Shaded band: the typical range (25th to 75th percentile) across
+        regions and providers. Dashed markers: the day the set of sources changed. A level change on those days can come from
+        the sources, not the price (see methodology, known limitations).</p>
+    </section>
+
+    <section class="panel">
+      <h2>All series, latest</h2>
+      <div class="table-wrap">
+        <table id="table">
+          <thead>
+            <tr><th>Series</th><th>Tier</th><th class="num">Index</th><th class="num">Range (p25–p75)</th><th class="num">Prices</th><th>Sources (as of)</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel verify">
+      <h2>Verify it yourself</h2>
+      <p>Every value above is a pure function of the ledger in the repo. The current build used:</p>
+      <dl>
+        <dt>Ledger head</dt><dd><code id="head">—</code></dd>
+        <dt>Methodology</dt><dd><span id="method">—</span></dd>
+      </dl>
+      <pre><code>git clone https://github.com/julionmalek/gpu-compute-index
+cd gpu-compute-index
+PYTHONPATH=src python3 -m gpu_index verify   # checks every hash in the chain
+PYTHONPATH=src python3 -m gpu_index build    # recomputes index/ byte for byte
+git diff --exit-code index/                  # no output = the published numbers check out</code></pre>
+      <p class="muted">Python 3.11+, standard library only. Raw prices live in <code>ledger/</code>, one file per day.</p>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Built by <a href="https://julionmalek.com/pro/">Julion Malek</a>. List prices, not traded prices: actual deals are usually cheaper.</p>
+  </footer>
+
+  <script src="site/app.js"></script>
+</body>
+</html>

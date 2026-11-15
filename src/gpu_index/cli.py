@@ -1,4 +1,4 @@
-"""Command line:  python -m gpu_index {collect,verify,summary}"""
+"""Command line:  python -m gpu_index {collect,verify,summary,build}"""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import index
 from .ledger import Ledger, iso
 from .sources import azure
 
@@ -63,6 +64,20 @@ def summary(ledger: Ledger) -> int:
     return 0
 
 
+def build(ledger: Ledger, out: Path) -> int:
+    check = ledger.verify()
+    if not check.ok:
+        print("Refusing to build: the ledger does not verify. Run `verify` for details.")
+        return 1
+    latest = index.build(ledger, out)
+    print(f"Built index (methodology {latest['methodology_version']}) from ledger head {latest['ledger_head'][:12]}… into {out}/\n")
+    print(f"{'series':<28}{'date':<12}{'value':>8}{'p25':>8}{'p75':>8}{'used':>6}{'dropped':>9}")
+    for name, p in latest["series"].items():
+        print(f"{name:<28}{p['date']:<12}{p['value']:>8.2f}{p['p25']:>8.2f}{p['p75']:>8.2f}"
+              f"{p['observations_used']:>6}{p['outliers_dropped']:>9}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="gpu_index", description=__doc__)
     parser.add_argument("--ledger", type=Path, default=Path("ledger"), help="ledger folder (default: ./ledger)")
@@ -71,12 +86,16 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("source", choices=sorted(SOURCES))
     sub.add_parser("verify", help="check the hash chain and file layout of the whole ledger")
     sub.add_parser("summary", help="print min/median/max per GPU from the latest snapshot")
+    b = sub.add_parser("build", help="recompute the index from the ledger and write it to --out")
+    b.add_argument("--out", type=Path, default=Path("index"), help="output folder (default: ./index)")
     args = parser.parse_args(argv)
     ledger = Ledger(args.ledger)
     if args.cmd == "collect":
         return collect(ledger, args.source)
     if args.cmd == "verify":
         return verify(ledger)
+    if args.cmd == "build":
+        return build(ledger, args.out)
     return summary(ledger)
 
 

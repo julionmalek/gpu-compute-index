@@ -23,7 +23,11 @@ jobs:
     env:
       PYTHONPATH: src      # standard library only, so nothing to install
     steps:
+      # main only accepts pull requests. The one exception is this repo's deploy key,
+      # stored as the DEPLOY_KEY secret, so the bot can append data without a daily PR.
       - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - uses: actions/setup-python@v5
         with:

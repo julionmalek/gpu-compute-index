@@ -1,7 +1,7 @@
 {
   "gpu": "H100",
   "gpu_model": "H100 NVL 94GB",
-  "methodology_version": "1.0",
+  "methodology_version": "1.1",
   "points": [
     {
       "date": "2026-11-15",
@@ -9,6 +9,9 @@
       "outliers_dropped": 0,
       "p25": 1.6133,
       "p75": 3.5375,
+      "source_dates": {
+        "azure": "2026-11-15"
+      },
       "sources": {
         "azure": 54
       },

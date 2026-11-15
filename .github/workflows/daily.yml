@@ -19,7 +19,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30    # AWS scans about 6 GB on the days it publishes a new price list
     env:
       PYTHONPATH: src      # standard library only, so nothing to install
     steps:
@@ -41,6 +41,11 @@ jobs:
         continue-on-error: true
         run: python -m gpu_index collect azure
 
+      - name: Collect AWS prices (only downloads when AWS publishes a new version)
+        id: aws
+        continue-on-error: true
+        run: python -m gpu_index collect aws
+
       - name: Verify ledger after writing
         run: python -m gpu_index verify
 
@@ -60,7 +65,7 @@ jobs:
           git push
 
       - name: Fail the job if a collection failed
-        if: steps.azure.outcome == 'failure'
+        if: steps.azure.outcome == 'failure' || steps.aws.outcome == 'failure'
         run: |
-          echo "::error::Azure collection failed. The failure was recorded in the ledger as a run entry."
+          echo "::error::A collection failed (azure: ${{ steps.azure.outcome }}, aws: ${{ steps.aws.outcome }}). The failure was recorded in the ledger as a run entry."
           exit 1

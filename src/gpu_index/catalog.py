@@ -1,7 +1,7 @@
 """Which machines count, and how many GPUs each one has.
 
-Prices are always normalised to USD per GPU-hour, so an 8x H100 machine at $98/h
-and a 1x H100 machine at $7/h become comparable. Anything not listed here is ignored:
+Prices are always normalised to USD per GPU-hour, so an 8x H100 machine at $55/h
+and a 1x H100 machine at $6.88/h become comparable. Anything not listed here is ignored:
 being explicit beats guessing from instance names.
 """
 
@@ -31,4 +31,15 @@ AZURE: dict[str, Machine] = {
     "Standard_NC96ads_A100_v4": Machine("A100", "A100 PCIe 80GB", 4),
     "Standard_ND96asr_A100_v4": Machine("A100", "A100 SXM 40GB", 8),
     "Standard_ND96amsr_A100_v4": Machine("A100", "A100 SXM 80GB", 8),
+}
+
+
+# AWS: https://aws.amazon.com/ec2/instance-types/p5/ and /p4/
+# Left out on purpose: p5e/p5en (H200, a different GPU) and Capacity Blocks
+# (pre-booked slots priced by auction, listed as $0 in the price list).
+AWS: dict[str, Machine] = {
+    "p5.48xlarge": Machine("H100", "H100 SXM 80GB", 8),
+    "p5.4xlarge": Machine("H100", "H100 SXM 80GB", 1),
+    "p4d.24xlarge": Machine("A100", "A100 SXM 40GB", 8),
+    "p4de.24xlarge": Machine("A100", "A100 SXM 80GB", 8),
 }

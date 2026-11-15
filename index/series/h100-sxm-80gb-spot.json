@@ -2,22 +2,9 @@
   "gpu": "H100",
   "gpu_model": "H100 SXM 80GB",
   "methodology_version": "1.1",
-  "points": [
-    {
-      "date": "2026-11-15",
-      "observations_used": 24,
-      "outliers_dropped": 0,
-      "p25": 2.7254,
-      "p75": 3.2478,
-      "source_dates": {
-        "azure": "2026-11-15"
-      },
-      "sources": {
-        "azure": 24
-      },
-      "value": 2.9526
-    }
-  ],
   "tier": "spot",
-  "unit": "USD per GPU-hour"
+  "unit": "USD per GPU-hour",
+  "points": [
+    {"date":"2026-11-15","observations_used":24,"outliers_dropped":0,"p25":2.7254,"p75":3.2478,"source_dates":{"azure":"2026-11-15"},"sources":{"azure":24},"value":2.9526}
+  ]
 }

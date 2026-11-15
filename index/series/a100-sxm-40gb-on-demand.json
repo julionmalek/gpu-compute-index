@@ -2,24 +2,9 @@
   "gpu": "A100",
   "gpu_model": "A100 SXM 40GB",
   "methodology_version": "1.1",
-  "points": [
-    {
-      "date": "2026-11-15",
-      "observations_used": 22,
-      "outliers_dropped": 0,
-      "p25": 3.2936,
-      "p75": 4.0788,
-      "source_dates": {
-        "aws": "2026-11-15",
-        "azure": "2026-11-15"
-      },
-      "sources": {
-        "aws": 15,
-        "azure": 7
-      },
-      "value": 3.6862
-    }
-  ],
   "tier": "on_demand",
-  "unit": "USD per GPU-hour"
+  "unit": "USD per GPU-hour",
+  "points": [
+    {"date":"2026-11-15","observations_used":22,"outliers_dropped":0,"p25":3.2936,"p75":4.0788,"source_dates":{"aws":"2026-11-15","azure":"2026-11-15"},"sources":{"aws":15,"azure":7},"value":3.6862}
+  ]
 }

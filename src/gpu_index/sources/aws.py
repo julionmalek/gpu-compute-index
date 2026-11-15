@@ -19,6 +19,8 @@ list has no spot prices.
 from __future__ import annotations
 
 import csv
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Callable, Iterable, Iterator
 
 from ..catalog import AWS
@@ -38,12 +40,25 @@ def current_version(get: Callable[[str], dict] = get_json) -> str:
     return get(BASE + OFFER + "/index.json")["currentVersion"]
 
 
-def region_csv_urls(version: str, get: Callable[[str], dict] = get_json) -> list[str]:
+def list_versions(get: Callable[[str], dict] = get_json) -> list[tuple[str, str]]:
+    """Every published version, oldest first, as (version id, effective-from date)."""
+    versions = get(BASE + OFFER + "/index.json")["versions"]
+    return sorted((v, meta.get("versionEffectiveBeginDate", "")[:10]) for v, meta in versions.items())
+
+
+def published_at(version: str) -> str:
+    """Version ids are their publication time: 20201201200519 -> 2020-12-01T20:05:19Z."""
+    return datetime.strptime(version, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def region_csv_urls(version: str, get: Callable[[str], dict] = get_json) -> list[tuple[str, str]]:
+    """(region code, CSV url) for every region in a version."""
     regions = get(f"{BASE}{OFFER}/{version}/region_index.json")["regions"]
-    return [BASE + r["currentVersionUrl"].replace("/index.json", "/index.csv") for _, r in sorted(regions.items())]
+    return [(code, BASE + r["currentVersionUrl"].replace("/index.json", "/index.csv"))
+            for code, r in sorted(regions.items())]
 
 
-def gpu_rows(lines: Iterable[bytes]) -> Iterator[dict]:
+def gpu_rows(lines: Iterable[bytes], region: str = "") -> Iterator[dict]:
     """Yield catalog rows from one region CSV, plus the file's version metadata on each row.
 
     The file starts with a few "key","value" metadata lines, then a header row
@@ -64,22 +79,33 @@ def gpu_rows(lines: Iterable[bytes]) -> Iterator[dict]:
         row = dict(zip(header, next(csv.reader([raw.decode("utf-8")]))))
         row["_version"] = meta.get("Version", "")
         row["_published"] = meta.get("Publication Date", "")
+        row["_region"] = region  # older files (before ~2021) have no "Region Code" column
         yield row
 
 
 def fetch_items(version: str, get: Callable[[str], dict] = get_json,
-                stream: Callable[[str], Iterable[bytes]] = stream_lines) -> list[dict]:
-    items: list[dict] = []
-    for url in region_csv_urls(version, get):
-        items.extend(gpu_rows(stream(url)))
-    return items
+                stream: Callable[[str], Iterable[bytes]] = stream_lines, workers: int = 6) -> list[dict]:
+    """Scan every region of a version, several regions at a time (the work is mostly waiting on the network)."""
+    def scan(job: tuple[str, str]) -> list[dict]:
+        region, url = job
+        return list(gpu_rows(stream(url), region))
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        return [row for rows in pool.map(scan, region_csv_urls(version, get)) for row in rows]
+
+
+def collected_versions(ledger: Ledger) -> set[str]:
+    """Every AWS version a successful run (daily or backfill) has already collected."""
+    return {e["version"] for e in ledger.entries()
+            if e.get("kind") == "run" and e.get("source") == SOURCE and e.get("status") == "ok" and e.get("version")}
 
 
 def last_version(ledger: Ledger) -> str | None:
-    """The newest AWS version a successful run already collected."""
+    """The newest AWS version the daily collection has seen (backfill runs don't count)."""
     version = None
     for e in ledger.entries():
-        if e.get("kind") == "run" and e.get("source") == SOURCE and e.get("status") == "ok" and e.get("version"):
+        if (e.get("kind") == "run" and e.get("source") == SOURCE and e.get("status") == "ok"
+                and e.get("version") and not e.get("backfill")):
             version = e["version"]
     return version
 
@@ -103,7 +129,8 @@ def parse(items: list[dict], observed_at: str) -> tuple[list[dict], dict[str, in
             skip("not in catalog"); continue
         if r.get("TermType") != "OnDemand":
             skip("not on-demand"); continue
-        if r.get("MarketOption") != "OnDemand":
+        # MarketOption only exists since Capacity Blocks launched (2023); before that, on-demand was on-demand
+        if (r.get("MarketOption") or "OnDemand") != "OnDemand":
             skip("capacity block"); continue
         # plain Linux is exactly operation "RunInstances"; RHEL, SUSE, Windows etc. have suffixed codes
         if (r.get("Operating System") != "Linux" or r.get("Pre Installed S/W") != "NA"
@@ -119,7 +146,10 @@ def parse(items: list[dict], observed_at: str) -> tuple[list[dict], dict[str, in
             skip("unreadable price"); continue
         if price <= 0:
             skip("zero price"); continue
-        key = (r["Instance Type"], r["Region Code"])
+        region = r.get("Region Code") or r.get("_region", "")
+        if not region:
+            skip("unknown region"); continue
+        key = (r["Instance Type"], region)
         if key in best:
             skip("duplicate row"); continue
         best[key] = {**r, "_price": price}

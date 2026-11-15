@@ -1,0 +1,65 @@
+# TEMPORARY: runs the one-off AWS history backfill on GitHub's network (about 250 GB
+# streamed, nothing stored) and commits the result to this branch. Deleted from the
+# branch before merging; the daily workflow stays the project's only workflow.
+name: AWS history backfill (one-off)
+
+on:
+  push:
+    branches: [feat/aws-backfill]
+    paths:              # the bot's data commits only touch ledger/ and index/, so they never retrigger this
+      - "src/**"
+      - ".github/workflows/backfill.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: aws-backfill
+  cancel-in-progress: true
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      PYTHONPATH: src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify ledger before writing
+        run: python -m gpu_index verify
+
+      - name: Backfill AWS history
+        id: backfill
+        continue-on-error: true
+        run: python -m gpu_index backfill --since 2020-11-01
+
+      - name: Verify ledger after writing
+        run: python -m gpu_index verify
+
+      - name: Build index
+        run: python -m gpu_index build
+
+      - name: Commit ledger and index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ledger index
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+            exit 0
+          fi
+          git commit -m "data: AWS price history backfill"
+          git push
+
+      - name: Fail if any version failed
+        if: steps.backfill.outcome == 'failure'
+        run: |
+          echo "::error::Some versions failed; they are recorded in the ledger and will be retried on the next run."
+          exit 1

@@ -1,4 +1,4 @@
-"""Command line:  python -m gpu_index {collect,verify,summary,build}"""
+"""Command line:  python -m gpu_index {collect,backfill,verify,summary,build}"""
 
 from __future__ import annotations
 
@@ -41,6 +41,43 @@ def collect(ledger: Ledger, source_name: str) -> int:
     print(f"{source_name}: {len(items)} price rows -> {len(observations)} observations "
           f"({len(written) - 1} new). Skipped: {skipped}")
     return 0
+
+
+def backfill(ledger: Ledger, since: str, limit: int | None) -> int:
+    """Collect AWS's archived price lists, oldest first, as point-in-time observations.
+
+    Each historical price is dated by when AWS *published* it (the version id), so the
+    index never uses a price before the market could have seen it. Versions already in
+    the ledger are skipped, so an interrupted backfill can simply be run again.
+    """
+    done = aws.collected_versions(ledger)
+    todo = [v for v, effective in aws.list_versions() if effective >= since and v not in done]
+    current = aws.current_version()
+    todo = [v for v in todo if v != current]  # the daily collection owns the current version
+    if limit:
+        todo = todo[:limit]
+    print(f"aws backfill: {len(todo)} version(s) to collect since {since}" + (f" (limit {limit})" if limit else ""))
+    failures = 0
+    for n, version in enumerate(todo, 1):
+        observed_at = aws.published_at(version)
+        started = iso(datetime.now(timezone.utc))
+        run = {"kind": "run", "run_id": f"aws-backfill-{version}", "source": "aws", "backfill": True,
+               "version": version, "started_at": started, "observed_at": observed_at}
+        try:
+            items = aws.fetch_items(version)
+            observations, skipped = aws.parse(items, observed_at)
+        except Exception as exc:
+            failures += 1
+            run.update(status="error", error=f"{type(exc).__name__}: {exc}", observations=0)
+            ledger.append([run])
+            print(f"  [{n}/{len(todo)}] {version}: FAILED {type(exc).__name__}: {exc}")
+            continue
+        run.update(status="ok", raw_items=len(items), observations=len(observations), skipped=skipped)
+        ledger.append([*observations, run])
+        models = sorted({o["gpu_model"] for o in observations})
+        print(f"  [{n}/{len(todo)}] {version} (published {observed_at[:10]}): "
+              f"{len(observations)} prices {models}", flush=True)
+    return 1 if failures else 0
 
 
 def verify(ledger: Ledger) -> int:
@@ -91,6 +128,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("collect", help="fetch prices from a source and append them to the ledger")
     c.add_argument("source", choices=sorted(SOURCES))
+    bf = sub.add_parser("backfill", help="collect AWS's archived price lists (history), oldest first")
+    bf.add_argument("--since", default="2020-11-01", help="first effective month to collect (default: 2020-11-01, when the A100 launched on AWS)")
+    bf.add_argument("--limit", type=int, default=None, help="collect at most this many versions (for testing)")
     sub.add_parser("verify", help="check the hash chain and file layout of the whole ledger")
     sub.add_parser("summary", help="print min/median/max per GPU from the latest snapshot")
     b = sub.add_parser("build", help="recompute the index from the ledger and write it to --out")
@@ -99,6 +139,8 @@ def main(argv: list[str] | None = None) -> int:
     ledger = Ledger(args.ledger)
     if args.cmd == "collect":
         return collect(ledger, args.source)
+    if args.cmd == "backfill":
+        return backfill(ledger, args.since, args.limit)
     if args.cmd == "verify":
         return verify(ledger)
     if args.cmd == "build":

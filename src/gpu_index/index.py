@@ -203,6 +203,14 @@ def dump(obj) -> str:
     return json.dumps(obj, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def dump_series(meta: dict, points: list[dict]) -> str:
+    """Readable header, then one point per line: small files, one-line daily diffs."""
+    head = json.dumps(meta, indent=2, sort_keys=True, ensure_ascii=False)[:-2]  # drop the closing "\n}"
+    lines = ",\n".join("    " + json.dumps(p, sort_keys=True, ensure_ascii=False, separators=(",", ":")) for p in points)
+    return f'{head},\n  "points": [\n{lines}\n  ]\n}}\n'
+
+
+
 def build(ledger: Ledger, out: Path | str) -> dict:
     """Recompute every series from the ledger and write them under `out`. Returns latest.json."""
     out = Path(out)
@@ -223,10 +231,9 @@ def build(ledger: Ledger, out: Path | str) -> dict:
     for (gpu, model, tier), points in sorted(series.items()):
         name = slug(model, tier)
         meta = {"gpu": gpu, "gpu_model": model, "tier": tier}
-        (out / "series" / f"{name}.json").write_text(dump({
-            **meta, "unit": "USD per GPU-hour", "methodology_version": METHODOLOGY_VERSION,
-            "points": [p.as_dict() for p in points],
-        }))
+        (out / "series" / f"{name}.json").write_text(dump_series(
+            {**meta, "unit": "USD per GPU-hour", "methodology_version": METHODOLOGY_VERSION},
+            [p.as_dict() for p in points]))
         latest["series"][name] = {**meta, **points[-1].as_dict()}
     (out / "latest.json").write_text(dump(latest))
     return latest

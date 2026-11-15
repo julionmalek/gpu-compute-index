@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: gpu-compute-index
+Version: 0.1.0
+Summary: Open, auditable daily price index for GPU compute
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+
+# GPU Compute Index
+
+An open, auditable daily price index for renting GPU compute (H100, A100, RTX 4090).
+
+Prices are collected from public sources into an append-only, tamper-evident ledger stored in this repo.
+The index is computed deterministically from the ledger, so anyone can recompute and verify every published value.
+
+> Work in progress. See the open pull requests.

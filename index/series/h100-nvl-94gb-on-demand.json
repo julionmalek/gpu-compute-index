@@ -5,6 +5,7 @@
   "tier": "on_demand",
   "unit": "USD per GPU-hour",
   "points": [
-    {"date":"2026-11-15","observations_used":58,"outliers_dropped":0,"p25":8.376,"p75":9.423,"source_dates":{"azure":"2026-11-15"},"sources":{"azure":58},"value":9.074}
+    {"date":"2026-11-15","observations_used":58,"outliers_dropped":0,"p25":8.376,"p75":9.423,"source_dates":{"azure":"2026-11-15"},"sources":{"azure":58},"value":9.074},
+    {"date":"2026-11-16","observations_used":58,"outliers_dropped":0,"p25":8.376,"p75":9.423,"source_dates":{"azure":"2026-11-16"},"sources":{"azure":58},"value":9.074}
   ]
 }

@@ -1,9 +1,9 @@
 {
-  "ledger_head": "b96c12e316ffb0ec6cd91866dcb0e9ad502333adf9787ab2a855e4cf7e3ab693",
+  "ledger_head": "53519ae61b863ca0a598f7b7ab7c180ff1c2de89ef02c00ed537989a12b8829e",
   "methodology_version": "1.1",
   "series": {
     "a100-pcie-80gb-on-demand": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 PCIe 80GB",
       "observations_used": 81,
@@ -11,7 +11,7 @@
       "p25": 4.4075,
       "p75": 5.142,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 81
@@ -20,7 +20,7 @@
       "value": 4.775
     },
     "a100-pcie-80gb-spot": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 PCIe 80GB",
       "observations_used": 75,
@@ -28,7 +28,7 @@
       "p25": 0.8145,
       "p75": 0.9703,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 75
@@ -37,7 +37,7 @@
       "value": 0.9329
     },
     "a100-sxm-40gb-on-demand": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 SXM 40GB",
       "observations_used": 22,
@@ -45,8 +45,8 @@
       "p25": 3.2936,
       "p75": 4.0788,
       "source_dates": {
-        "aws": "2026-11-20",
-        "azure": "2026-11-20"
+        "aws": "2026-11-21",
+        "azure": "2026-11-21"
       },
       "sources": {
         "aws": 15,
@@ -56,7 +56,7 @@
       "value": 3.6862
     },
     "a100-sxm-40gb-spot": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 SXM 40GB",
       "observations_used": 7,
@@ -64,7 +64,7 @@
       "p25": 0.7479,
       "p75": 0.9723,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 7
@@ -73,7 +73,7 @@
       "value": 0.8998
     },
     "a100-sxm-80gb-on-demand": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 SXM 80GB",
       "observations_used": 35,
@@ -81,8 +81,8 @@
       "p25": 4.1171,
       "p75": 5.3251,
       "source_dates": {
-        "aws": "2026-11-20",
-        "azure": "2026-11-20"
+        "aws": "2026-11-21",
+        "azure": "2026-11-21"
       },
       "sources": {
         "aws": 6,
@@ -92,7 +92,7 @@
       "value": 4.7211
     },
     "a100-sxm-80gb-spot": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "A100",
       "gpu_model": "A100 SXM 80GB",
       "observations_used": 29,
@@ -100,7 +100,7 @@
       "p25": 1.2662,
       "p75": 1.5406,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 29
@@ -109,7 +109,7 @@
       "value": 1.4501
     },
     "h100-nvl-94gb-on-demand": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "H100",
       "gpu_model": "H100 NVL 94GB",
       "observations_used": 58,
@@ -117,7 +117,7 @@
       "p25": 8.376,
       "p75": 9.423,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 58
@@ -126,7 +126,7 @@
       "value": 9.074
     },
     "h100-nvl-94gb-spot": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "H100",
       "gpu_model": "H100 NVL 94GB",
       "observations_used": 54,
@@ -134,7 +134,7 @@
       "p25": 1.6133,
       "p75": 3.5375,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 54
@@ -143,7 +143,7 @@
       "value": 1.8443
     },
     "h100-sxm-80gb-on-demand": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "H100",
       "gpu_model": "H100 SXM 80GB",
       "observations_used": 52,
@@ -151,8 +151,8 @@
       "p25": 8.256,
       "p75": 15.977,
       "source_dates": {
-        "aws": "2026-11-20",
-        "azure": "2026-11-20"
+        "aws": "2026-11-21",
+        "azure": "2026-11-21"
       },
       "sources": {
         "aws": 28,
@@ -162,7 +162,7 @@
       "value": 12.1165
     },
     "h100-sxm-80gb-spot": {
-      "date": "2026-11-20",
+      "date": "2026-11-21",
       "gpu": "H100",
       "gpu_model": "H100 SXM 80GB",
       "observations_used": 24,
@@ -170,7 +170,7 @@
       "p25": 2.7254,
       "p75": 3.2478,
       "source_dates": {
-        "azure": "2026-11-20"
+        "azure": "2026-11-21"
       },
       "sources": {
         "azure": 24

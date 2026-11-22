@@ -740,6 +740,7 @@
     {"date":"2026-11-18","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-18","azure":"2026-11-18"},"sources":{"aws":6,"azure":29},"value":4.7211},
     {"date":"2026-11-19","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-19","azure":"2026-11-19"},"sources":{"aws":6,"azure":29},"value":4.7211},
     {"date":"2026-11-20","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-20","azure":"2026-11-20"},"sources":{"aws":6,"azure":29},"value":4.7211},
-    {"date":"2026-11-21","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-21","azure":"2026-11-21"},"sources":{"aws":6,"azure":29},"value":4.7211}
+    {"date":"2026-11-21","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-21","azure":"2026-11-21"},"sources":{"aws":6,"azure":29},"value":4.7211},
+    {"date":"2026-11-22","observations_used":35,"outliers_dropped":0,"p25":4.1171,"p75":5.3251,"source_dates":{"aws":"2026-11-21","azure":"2026-11-22"},"sources":{"aws":6,"azure":29},"value":4.7211}
   ]
 }

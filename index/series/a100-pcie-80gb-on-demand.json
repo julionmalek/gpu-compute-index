@@ -16,6 +16,7 @@
     {"date":"2026-11-23","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-23"},"sources":{"azure":81},"value":4.775},
     {"date":"2026-11-24","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-24"},"sources":{"azure":81},"value":4.775},
     {"date":"2026-11-25","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-25"},"sources":{"azure":81},"value":4.775},
-    {"date":"2026-11-26","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-26"},"sources":{"azure":81},"value":4.775}
+    {"date":"2026-11-26","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-26"},"sources":{"azure":81},"value":4.775},
+    {"date":"2026-11-27","observations_used":81,"outliers_dropped":0,"p25":4.4075,"p75":5.142,"source_dates":{"azure":"2026-11-27"},"sources":{"azure":81},"value":4.775}
   ]
 }
